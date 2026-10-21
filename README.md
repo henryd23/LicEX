@@ -84,13 +84,25 @@ preserved.
 ## Requirements
 
 Install the prerequisites required by the existing Tauri application:
-Node.js, **pnpm 10**, Rust and the platform-specific build tools.
+Node.js **20.19.0 or newer**, **pnpm 10.17.1**, Rust and the
+platform-specific build tools. The exact JavaScript dependency tree is pinned
+by `pnpm-lock.yaml`; the Rust dependency tree is pinned by
+`src-tauri/Cargo.lock`.
+
+The repository includes setup helpers for the most common environments:
+
+- Windows: `powershell -ExecutionPolicy Bypass -File scripts/setup-windows.ps1`
+- macOS: `bash scripts/setup-macos.sh`
+- Ubuntu/Debian: `bash scripts/setup-ubuntu.sh`
+
+The scripts install system prerequisites but do not clone the repository or
+run the application. Review them before use, especially on managed machines.
 
 > **Important — pnpm version.** This project declares its `overrides`
-> in the `"pnpm"` field of `package.json`, and the lockfile was
-> generated accordingly. **pnpm 12 ignores that field**, so
+> in `pnpm-workspace.yaml`, and the lockfile was
+> generated accordingly. **pnpm 12 ignores those settings**, so
 > `pnpm install --frozen-lockfile` fails with
-> `ERR_PNPM_LOCKFILE_CONFIG_MISMATCH`. Use **pnpm 10**.
+> `ERR_PNPM_LOCKFILE_CONFIG_MISMATCH`. Use **pnpm 10.17.1**.
 > Do not use `npm install`: it fails with an `ERESOLVE` error
 > (`eslint` 9 vs `@eslint/js` 10 peer dependency conflict).
 > Do not use `--no-frozen-lockfile`, as it rewrites the lockfile.
@@ -127,13 +139,13 @@ rustup default stable-msvc
 #### 2. Install pnpm 10
 
 ```powershell
-npm install -g pnpm@10 --allow-scripts=pnpm
+npm install -g pnpm@10.17.1 --allow-scripts=pnpm
 ```
 
 Close and reopen PowerShell, then check:
 
 ```powershell
-pnpm --version   # must print 10.x.x
+pnpm --version   # must print 10.17.1
 ```
 
 Notes:
@@ -146,7 +158,7 @@ Notes:
   (see `npm config get prefix`, usually
   `C:\Users\<you>\AppData\Roaming\npm`) is in your user `Path`.
 - Without installing anything you can also run
-  `npx pnpm@10 install --frozen-lockfile`.
+  `npx pnpm@10.17.1 install --frozen-lockfile`.
 - Ignore the pnpm banner "Update available 10.x → 12.x": updating
   brings the lockfile error back.
 
@@ -177,6 +189,9 @@ Run the commands from inside the `licex` folder (check with
 `Test-Path package.json`). The first Rust build can take several
 minutes.
 
+Docker Desktop is required when using a local RGB Lightning node environment.
+It is not required for frontend-only development.
+
 ### macOS
 
 #### 1. Install the prerequisites
@@ -187,9 +202,9 @@ brew install node pnpm rustup llvm ninja cmake openssl@3
 rustup-init
 ```
 
-Make sure pnpm is version 10 (`pnpm --version`). If Homebrew installed
-a newer major, use `npm install -g pnpm@10` or `corepack enable` and
-`corepack prepare pnpm@10 --activate`.
+Make sure pnpm is version 10.17.1 (`pnpm --version`). If Homebrew installed
+a newer major, use `npm install -g pnpm@10.17.1` or Corepack with the version
+declared in `package.json`.
 
 #### 2. Environment variables (optional)
 
@@ -220,16 +235,58 @@ pnpm install --frozen-lockfile
 pnpm run tauri:dev
 ```
 
+### Linux
+
+The supported and tested Linux build environment is Ubuntu 22.04 or newer (or
+a compatible Debian-based distribution). Install Node.js 20.19.0 or newer
+before running the setup script; use the Node.js LTS packages or a version
+manager such as `nvm`.
+
+#### Ubuntu/Debian
+
+```bash
+bash scripts/setup-ubuntu.sh
+pnpm install --frozen-lockfile
+pnpm run tauri:dev
+```
+
+The script installs the GTK/WebKit, OpenSSL, `pkg-config`, compiler, CMake,
+Ninja and packaging libraries needed by Tauri and the bundled Rust code. On
+Fedora, Arch or another distribution, install the distribution equivalents of
+the packages in `scripts/setup-ubuntu.sh`; the script intentionally refuses to
+run when `apt-get` is unavailable.
+
+Docker Desktop or Docker Engine is required for local RGB Lightning node
+environments. Make sure the Docker daemon is running and that the current user
+can invoke `docker` without `sudo`.
+
+### Common verification
+
+Run these commands from the repository root after installing prerequisites:
+
+```bash
+node --version       # v20.19.0 or newer
+pnpm --version       # 10.17.1
+rustc --version
+pnpm install --frozen-lockfile
+pnpm run type-check
+```
+
+On PowerShell, use the same commands without the comments. Do not replace the
+frozen pnpm install with `npm install` or `--no-frozen-lockfile`: both bypass
+the dependency and lockfile assumptions used by this repository.
+
 ### Troubleshooting
 
 | Error                                     | Cause                                    | Fix                                                    |
 | ----------------------------------------- | ---------------------------------------- | ------------------------------------------------------ |
-| `pnpm` not recognised                     | pnpm not installed or not in `PATH`      | `npm install -g pnpm@10`, reopen the terminal          |
-| `EPERM ... pnpx.CMD` on `corepack enable` | No write access to `Program Files`       | Use `npm install -g pnpm@10` or an administrator shell |
-| `ERR_PNPM_LOCKFILE_CONFIG_MISMATCH`       | pnpm 12 ignores `pnpm.overrides`         | Use pnpm 10                                            |
+| `pnpm` not recognised                     | pnpm not installed or not in `PATH`      | `npm install -g pnpm@10.17.1`, reopen the terminal    |
+| `EPERM ... pnpx.CMD` on `corepack enable` | No write access to `Program Files`       | Use `npm install -g pnpm@10.17.1` or an administrator shell |
+| `ERR_PNPM_LOCKFILE_CONFIG_MISMATCH`       | pnpm 12 ignores overrides in `pnpm-workspace.yaml` | Use pnpm 10.17.1                              |
 | `ERESOLVE` on `npm install`               | eslint 9 / `@eslint/js` 10 peer conflict | Use pnpm, not npm                                      |
 | `failed to find tool /opt/homebrew/...`   | A macOS compiler path is forced on another OS | Remove global `CC`/`CXX` overrides and use the native compiler |
-| Build fails on OpenSSL / libclang         | Missing environment variables            | Set the variables in the Environment Variables step    |
+| Build fails on OpenSSL / libclang         | Missing native packages or environment variables | Install the platform prerequisites and set the variables when needed |
+| Docker node cannot start                  | Docker is not installed, running or accessible | Start Docker Desktop/Engine and verify `docker version` |
 
 These commands validate parts of the existing application. They do
 not establish that real RGB transfers, license verification, or WDK
@@ -252,11 +309,6 @@ wallet operations work.
 - Enrico Danesi
 - Martina Pasquinelli
 - Giuseppe Casale
-
-## Hackathon
-
-See [HACKATHON_DEADLINES.md](HACKATHON_DEADLINES.md) for the initial
-publication and final commit deadlines.
 
 LICEX is an experimental project under development. Do not rely on
 unverified functionality or use real funds in untested flows.

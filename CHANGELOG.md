@@ -1,3 +1,12 @@
+## [Unreleased]
+
+### Development environment
+
+- Document the Node.js and pnpm versions required by the project.
+- Add platform-specific setup scripts for Windows, macOS and Ubuntu/Debian.
+- Expand the README with Linux prerequisites, Docker runtime requirements and
+  clearer separation between build-time and optional runtime dependencies.
+
 ## [Version 0.6.0] - 2026-10-14
 
 A clearer desktop experience for managing an RGB Lightning node, trading assets and using KaleidoMind. These notes cover the complete upgrade from 0.5.0, including the changes previously listed under 0.5.1.
